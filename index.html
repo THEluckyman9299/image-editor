@@ -73,7 +73,7 @@
       <div class="canvas-wrap">
         <canvas id="canvas" width="1025" height="2160"></canvas>
       </div>
-      <div class="hint">Click an image to select it. Drag selected images to adjust position. Use the mouse wheel to scale.</div>
+      <div class="hint">Tap/click an image to select it. Tap/click empty space to unselect. Drag to move. Use the mouse wheel on desktop to scale.</div>
     </section>
 
     <aside class="panel right-panel">
@@ -81,7 +81,7 @@
         <h2>Selected image</h2>
         <div id="noSelection" class="empty">Select an image on the canvas or from the list.</div>
         <div id="editor" hidden>
-          <div class="selected-title"><span id="selectedName"></span><button id="deleteSelected" class="danger">Remove</button></div>
+          <div class="selected-title"><span id="selectedName"></span><div class="selected-buttons"><button id="deselectBtn">Unselect</button><button id="deleteSelected" class="danger">Remove</button></div></div>
 
           <h3>Position & size</h3>
           <div class="row">

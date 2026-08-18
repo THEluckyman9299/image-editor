@@ -1,34 +1,14 @@
-# Steam Grid Maker
+# Steam Grid Maker — Fixed
 
-A client-side image grid editor designed for Steam artwork/profile layouts.
+This version fixes:
+- Contain mode keeps the original image aspect ratio.
+- Neon border follows the actual rendered image dimensions instead of the square grid cell.
+- Shadow follows the rendered image rather than being forced to the grid cell.
+- Selection outline follows the actual rendered image.
+- Android/mobile touch uses Pointer Events.
+- Tapping/clicking empty canvas deselects the current image.
+- Added an Unselect button.
+- Export temporarily hides the selection outline, so it can never appear in exported PNGs.
+- Desktop mouse dragging and wheel scaling remain supported.
 
-## Features
-
-- Fixed/default 1025 × 2160 canvas (editable)
-- Background image
-- Up to 20 foreground images
-- Automatic 3 × 6 grid
-- Final incomplete row can be centered
-- Adjustable columns, rows, margins and gaps
-- Per-image X/Y position
-- Per-image scale and rotation
-- Opacity, blur, brightness and saturation
-- Per-image shadow: color, opacity, blur, spread, offsets
-- Per-image neon border: color, thickness, opacity, glow blur and layers
-- Apply one image's style to every image
-- Drag images directly on the canvas
-- Mouse-wheel scaling
-- PNG export
-- No server/backend; images stay in the browser
-
-## GitHub Pages
-
-1. Create a new GitHub repository.
-2. Upload `index.html`, `style.css`, and `app.js` to the repository root.
-3. Go to **Settings → Pages**.
-4. Under **Build and deployment**, choose **Deploy from a branch**.
-5. Select your main branch and `/ (root)`.
-6. Save.
-7. GitHub will publish the site at your `github.io` URL.
-
-No build step or npm installation is required.
+Open `index.html` in a browser or deploy the folder to GitHub Pages.
