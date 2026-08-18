@@ -1,14 +1,16 @@
-# Steam Grid Maker — Fixed
+# Steam Grid Maker — Animated Border + GIF
 
-This version fixes:
-- Contain mode keeps the original image aspect ratio.
-- Neon border follows the actual rendered image dimensions instead of the square grid cell.
-- Shadow follows the rendered image rather than being forced to the grid cell.
-- Selection outline follows the actual rendered image.
-- Android/mobile touch uses Pointer Events.
-- Tapping/clicking empty canvas deselects the current image.
-- Added an Unselect button.
-- Export temporarily hides the selection outline, so it can never appear in exported PNGs.
-- Desktop mouse dragging and wheel scaling remain supported.
+This version includes the previous fixes plus:
 
-Open `index.html` in a browser or deploy the folder to GitHub Pages.
+- Animated background border drawn **inside** the canvas edge, so canvas dimensions never change.
+- Animated neon border with moving dash/glow.
+- Animated snow-border mode using the supplied snow reference as an internal overlay.
+- Neon + snow combined mode.
+- Export GIF button.
+- GIF loops forever.
+- GIF export hides the editor selection outline.
+- GIF settings for FPS, duration and output scale.
+- Default GIF settings are intentionally mobile-friendly to reduce memory use and file size.
+- PNG export is still available.
+
+The GIF encoder is loaded from jsDelivr using gif.js. gif.js is a browser-side GIF encoder that supports web workers and looping GIF output.
