@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Steam Grid Maker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Steam Grid Maker</h1>
+      <p>Build a 1025 × 2160 image grid from a background and up to 20 pictures.</p>
+    </div>
+    <div class="top-actions">
+      <button id="exportBtn" class="primary">Export PNG</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+  </header>
+
+  <main class="app">
+    <aside class="panel left-panel">
+      <section>
+        <h2>Canvas</h2>
+        <label class="upload">
+          <span>Background image</span>
+          <input id="bgInput" type="file" accept="image/*">
+        </label>
+        <div class="row">
+          <label>Width <input id="canvasW" type="number" value="1025" min="100"></label>
+          <label>Height <input id="canvasH" type="number" value="2160" min="100"></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Images</h2>
+        <label class="upload">
+          <span>Add images (up to 20)</span>
+          <input id="imagesInput" type="file" accept="image/*" multiple>
+        </label>
+        <div class="small">17 images makes a 3 × 6 grid with the final 2 centered. 18–20 are supported too.</div>
+        <div id="imageList" class="image-list"></div>
+      </section>
+
+      <section>
+        <h2>Grid</h2>
+        <div class="row">
+          <label>Columns <input id="cols" type="number" value="3" min="1" max="8"></label>
+          <label>Rows <input id="rows" type="number" value="6" min="1" max="12"></label>
+        </div>
+        <div class="row">
+          <label>Gap X <input id="gapX" type="number" value="18" min="0"></label>
+          <label>Gap Y <input id="gapY" type="number" value="18" min="0"></label>
+        </div>
+        <div class="row">
+          <label>Side margin <input id="marginX" type="number" value="45" min="0"></label>
+          <label>Top margin <input id="marginY" type="number" value="45" min="0"></label>
+        </div>
+        <div class="row">
+          <label>Bottom margin <input id="marginBottom" type="number" value="45" min="0"></label>
+          <label>Fit
+            <select id="fit">
+              <option value="cover">Cover</option>
+              <option value="contain">Contain</option>
+            </select>
+          </label>
+        </div>
+        <label class="check"><input id="centerLast" type="checkbox" checked> Center incomplete final row</label>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <div class="canvas-wrap">
+        <canvas id="canvas" width="1025" height="2160"></canvas>
+      </div>
+      <div class="hint">Click an image to select it. Drag selected images to adjust position. Use the mouse wheel to scale.</div>
+    </section>
+
+    <aside class="panel right-panel">
+      <section>
+        <h2>Selected image</h2>
+        <div id="noSelection" class="empty">Select an image on the canvas or from the list.</div>
+        <div id="editor" hidden>
+          <div class="selected-title"><span id="selectedName"></span><button id="deleteSelected" class="danger">Remove</button></div>
+
+          <h3>Position & size</h3>
+          <div class="row">
+            <label>X <input id="posX" type="number" step="1"></label>
+            <label>Y <input id="posY" type="number" step="1"></label>
+          </div>
+          <div class="row">
+            <label>Scale % <input id="scale" type="number" min="1" max="500" step="1"></label>
+            <label>Rotation ° <input id="rotation" type="number" step="1"></label>
+          </div>
+
+          <h3>Image</h3>
+          <label>Opacity <input id="opacity" type="range" min="0" max="100" value="100"><output id="opacityOut">100%</output></label>
+          <label>Blur <input id="blur" type="range" min="0" max="40" value="0"><output id="blurOut">0px</output></label>
+          <label>Brightness <input id="brightness" type="range" min="20" max="200" value="100"><output id="brightnessOut">100%</output></label>
+          <label>Saturation <input id="saturation" type="range" min="0" max="200" value="100"><output id="saturationOut">100%</output></label>
+
+          <h3>Shadow</h3>
+          <label class="check"><input id="shadowEnabled" type="checkbox"> Enable shadow</label>
+          <label>Color <input id="shadowColor" type="color" value="#000000"></label>
+          <label>Opacity <input id="shadowOpacity" type="range" min="0" max="100" value="65"><output id="shadowOpacityOut">65%</output></label>
+          <div class="row">
+            <label>Blur <input id="shadowBlur" type="number" min="0" max="100" value="20"></label>
+            <label>Spread <input id="shadowSpread" type="number" min="0" max="50" value="0"></label>
+          </div>
+          <div class="row">
+            <label>Offset X <input id="shadowX" type="number" value="0"></label>
+            <label>Offset Y <input id="shadowY" type="number" value="8"></label>
+          </div>
+
+          <h3>Neon border</h3>
+          <label class="check"><input id="neonEnabled" type="checkbox"> Enable neon border</label>
+          <label>Color <input id="neonColor" type="color" value="#8b5cf6"></label>
+          <div class="row">
+            <label>Thickness <input id="neonWidth" type="number" min="0" max="30" value="3"></label>
+            <label>Opacity <input id="neonOpacity" type="range" min="0" max="100" value="90"><output id="neonOpacityOut">90%</output></label>
+          </div>
+          <div class="row">
+            <label>Glow blur <input id="neonBlur" type="number" min="0" max="100" value="18"></label>
+            <label>Glow layers <input id="neonLayers" type="number" min="1" max="6" value="3"></label>
+          </div>
+          <label class="check"><input id="neonInside" type="checkbox" checked> Keep border inside image bounds</label>
+
+          <button id="applyAll" class="wide">Apply this image's style to all</button>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <footer>Everything runs locally in your browser. Your images are not uploaded anywhere.</footer>
+  <script src="app.js"></script>
+</body>
+</html>
