@@ -13,7 +13,7 @@
       <p>Build a 1025 × 2160 image grid from a background and up to 20 pictures.</p>
     </div>
     <div class="top-actions">
-      <button id="exportBtn" class="primary">Export PNG</button><button id="exportGifBtn" class="gif">Export GIF</button>
+      <button id="exportBtn" class="primary">Export PNG</button>
       <button id="resetBtn">Reset</button>
     </div>
   </header>
@@ -66,36 +66,6 @@
           </label>
         </div>
         <label class="check"><input id="centerLast" type="checkbox" checked> Center incomplete final row</label>
-      </section>
-
-      <section>
-        <h2>Background border</h2>
-        <label>Style
-          <select id="borderMode">
-            <option value="off">Off</option>
-            <option value="neon">Animated neon</option>
-            <option value="snow">Animated snow</option>
-            <option value="both">Neon + snow</option>
-          </select>
-        </label>
-        <label>Neon color <input id="borderColor" type="color" value="#ffffff"></label>
-        <div class="row">
-          <label>Thickness <input id="borderWidth" type="number" min="1" max="30" value="4"><output id="borderWidthOut">4px</output></label>
-          <label>Glow <input id="borderGlow" type="number" min="0" max="100" value="24"><output id="borderGlowOut">24px</output></label>
-        </div>
-        <label>Animation speed <input id="borderSpeed" type="range" min="0.1" max="4" step="0.1" value="1"><output id="borderSpeedOut">1x</output></label>
-        <label>Snow opacity <input id="snowOpacity" type="range" min="0" max="100" value="70"><output id="snowOpacityOut">70%</output></label>
-        <div class="small">The border is drawn inside the background edge, so it never changes the canvas size. The included snow border is based on the snow image you provided.</div>
-      </section>
-
-      <section>
-        <h2>GIF export</h2>
-        <div class="row">
-          <label>FPS <input id="gifFps" type="number" min="2" max="15" value="8"><output id="gifFpsOut">8 FPS</output></label>
-          <label>Duration <input id="gifSeconds" type="number" min="0.5" max="6" step="0.5" value="2.5"><output id="gifSecondsOut">2.5s</output></label>
-        </div>
-        <label>GIF size <input id="gifScale" type="range" min="25" max="100" step="25" value="50"><output id="gifScaleOut">50%</output></label>
-        <div class="small">GIF loops forever. 50% is the recommended mobile-friendly setting for keeping file size and encoding time reasonable.</div>
       </section>
     </aside>
 
@@ -162,7 +132,6 @@
   </main>
 
   <footer>Everything runs locally in your browser. Your images are not uploaded anywhere.</footer>
-  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

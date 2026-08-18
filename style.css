@@ -42,7 +42,3 @@ canvas{touch-action:none}
   .canvas-wrap{max-height:calc(100vh - 175px)}
   canvas{max-height:calc(100vh - 175px)}
 }
-
-.gif{background:#27344a}
-.top-actions{display:flex;gap:8px;flex-wrap:wrap}
-output{font-size:.78rem;opacity:.75;margin-left:4px}
