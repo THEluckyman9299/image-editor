@@ -13,6 +13,8 @@
       <p>Build a 1025 × 2160 image grid from a background and up to 20 pictures.</p>
     </div>
     <div class="top-actions">
+      <button id="undoBtn" title="Undo (Ctrl/Cmd+Z)" disabled>↶ Undo</button>
+      <button id="redoBtn" title="Redo (Ctrl/Cmd+Shift+Z)" disabled>↷ Redo</button>
       <button id="exportBtn" class="primary">Export PNG</button>
       <button id="resetBtn">Reset</button>
     </div>
@@ -66,6 +68,47 @@
           </label>
         </div>
         <label class="check"><input id="centerLast" type="checkbox" checked> Center incomplete final row</label>
+      </section>
+
+      <section>
+        <h2>Background border</h2>
+        <div class="small">Static inset border drawn inside the canvas. It never changes the exported image size.</div>
+        <label class="check"><input id="bgBorderEnabled" type="checkbox"> Enable background border</label>
+        <div class="row">
+          <label>Style
+            <select id="bgBorderStyle">
+              <option value="solid">Solid</option>
+              <option value="double">Double</option>
+              <option value="dashed">Dashed</option>
+              <option value="dotted">Dotted</option>
+            </select>
+          </label>
+          <label>Width <input id="bgBorderWidth" type="range" min="1" max="30" value="3"><output id="bgBorderWidthOut">3px</output></label>
+        </div>
+        <div class="row">
+          <label>Color <input id="bgBorderColor" type="color" value="#ffffff"></label>
+          <label>2nd color <input id="bgBorderColor2" type="color" value="#8b5cf6"></label>
+        </div>
+        <label class="check"><input id="bgBorderGradient" type="checkbox"> Use 2-color gradient</label>
+        <label>Gradient angle <input id="bgBorderGradientAngle" type="number" min="-360" max="360" value="0"></label>
+        <label>Inset <input id="bgBorderInset" type="range" min="0" max="120" value="18"><output id="bgBorderInsetOut">18px</output></label>
+        <label>Opacity <input id="bgBorderOpacity" type="range" min="0" max="100" value="90"><output id="bgBorderOpacityOut">90%</output></label>
+        <label>Corner radius <input id="bgBorderRadius" type="range" min="0" max="150" value="18"><output id="bgBorderRadiusOut">18px</output></label>
+
+        <h3>Glow</h3>
+        <label class="check"><input id="bgBorderGlow" type="checkbox" checked> Enable glow</label>
+        <div class="row">
+          <label>Glow color <input id="bgBorderGlowColor" type="color" value="#ffffff"></label>
+          <label>Glow blur <input id="bgBorderGlowBlur" type="range" min="0" max="100" value="18"><output id="bgBorderGlowBlurOut">18px</output></label>
+        </div>
+        <label>Glow opacity <input id="bgBorderGlowOpacity" type="range" min="0" max="100" value="75"><output id="bgBorderGlowOpacityOut">75%</output></label>
+
+        <h3>Line pattern</h3>
+        <div class="row">
+          <label>Dash length <input id="bgBorderDash" type="range" min="2" max="100" value="24"><output id="bgBorderDashOut">24px</output></label>
+          <label>Gap <input id="bgBorderGap" type="range" min="2" max="100" value="14"><output id="bgBorderGapOut">14px</output></label>
+        </div>
+        <label>Double-line gap <input id="bgBorderDoubleGap" type="range" min="1" max="40" value="8"><output id="bgBorderDoubleGapOut">8px</output></label>
       </section>
     </aside>
 

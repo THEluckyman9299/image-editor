@@ -6,6 +6,38 @@ let bg = null;
 let images = [];
 let selected = -1;
 let drag = null;
+let dragHistoryBefore = null;
+
+// Undo / redo history. Images keep their loaded Image objects; only editable state is cloned.
+let undoStack = [];
+let redoStack = [];
+let pendingHistory = null;
+let pendingHistoryTimer = null;
+let restoringHistory = false;
+
+const MAX_HISTORY = 50;
+
+const borderDefaults = () => ({
+  enabled: false,
+  style: "solid",
+  color: "#ffffff",
+  color2: "#8b5cf6",
+  gradient: false,
+  gradientAngle: 0,
+  width: 3,
+  inset: 18,
+  opacity: 90,
+  radius: 18,
+  glow: true,
+  glowColor: "#ffffff",
+  glowBlur: 18,
+  glowOpacity: 75,
+  dash: 24,
+  gap: 14,
+  doubleGap: 8
+});
+
+let bgBorder = borderDefaults();
 
 const defaults = () => ({
   x: 0, y: 0, scale: 100, rotation: 0,
@@ -15,6 +47,110 @@ const defaults = () => ({
   neonEnabled: false, neonColor: "#8b5cf6", neonWidth: 3, neonOpacity: 90,
   neonBlur: 18, neonLayers: 3, neonInside: true
 });
+
+function snapshot(){
+  return {
+    canvasW: +$("canvasW").value || canvas.width,
+    canvasH: +$("canvasH").value || canvas.height,
+    grid: {
+      cols: +$("cols").value || 3,
+      rows: +$("rows").value || 6,
+      gapX: +$("gapX").value || 0,
+      gapY: +$("gapY").value || 0,
+      marginX: +$("marginX").value || 0,
+      marginY: +$("marginY").value || 0,
+      marginBottom: +$("marginBottom").value || 0,
+      fit: $("fit").value,
+      centerLast: $("centerLast").checked
+    },
+    border: {...bgBorder},
+    bg,
+    images: images.map(o => ({...o, s:{...o.s}})),
+    selected
+  };
+}
+
+function pushUndo(state){
+  if(restoringHistory || !state) return;
+  undoStack.push(state);
+  if(undoStack.length>MAX_HISTORY) undoStack.shift();
+  redoStack=[];
+  updateHistoryButtons();
+}
+
+function flushPendingHistory(){
+  if(pendingHistoryTimer){ clearTimeout(pendingHistoryTimer); pendingHistoryTimer=null; }
+  if(pendingHistory){
+    pushUndo(pendingHistory);
+    pendingHistory=null;
+  }
+}
+
+function beginContinuousEdit(){
+  if(restoringHistory) return;
+  if(!pendingHistory) pendingHistory=snapshot();
+  if(pendingHistoryTimer) clearTimeout(pendingHistoryTimer);
+  pendingHistoryTimer=setTimeout(flushPendingHistory,450);
+}
+
+function beginAction(){
+  flushPendingHistory();
+  return snapshot();
+}
+
+function finishAction(before){
+  if(restoringHistory) return;
+  pushUndo(before);
+}
+
+function restoreSnapshot(st){
+  restoringHistory=true;
+  flushPendingHistory();
+  canvas.width=st.canvasW;
+  canvas.height=st.canvasH;
+  $("canvasW").value=st.canvasW;
+  $("canvasH").value=st.canvasH;
+  const g=st.grid;
+  $("cols").value=g.cols; $("rows").value=g.rows;
+  $("gapX").value=g.gapX; $("gapY").value=g.gapY;
+  $("marginX").value=g.marginX; $("marginY").value=g.marginY;
+  $("marginBottom").value=g.marginBottom;
+  $("fit").value=g.fit; $("centerLast").checked=g.centerLast;
+  bgBorder={...borderDefaults(),...st.border};
+  bg=st.bg;
+  images=st.images.map(o=>({...o,s:{...o.s}}));
+  selected=st.selected;
+  rebuildList();
+  select(selected);
+  syncBorderUI();
+  restoringHistory=false;
+  draw();
+  updateHistoryButtons();
+}
+
+function undo(){
+  flushPendingHistory();
+  if(!undoStack.length) return;
+  const current=snapshot();
+  const previous=undoStack.pop();
+  redoStack.push(current);
+  restoreSnapshot(previous);
+}
+
+function redo(){
+  flushPendingHistory();
+  if(!redoStack.length) return;
+  const current=snapshot();
+  const next=redoStack.pop();
+  undoStack.push(current);
+  restoreSnapshot(next);
+}
+
+function updateHistoryButtons(){
+  const u=$("undoBtn"), r=$("redoBtn");
+  if(u) u.disabled=!undoStack.length;
+  if(r) r.disabled=!redoStack.length;
+}
 
 function loadFile(file){
   return new Promise((resolve,reject)=>{
@@ -27,30 +163,72 @@ function loadFile(file){
 
 $("bgInput").addEventListener("change", async e=>{
   if(!e.target.files[0]) return;
+  const before=beginAction();
   bg = await loadFile(e.target.files[0]);
+  finishAction(before);
   draw();
 });
 
 $("imagesInput").addEventListener("change", async e=>{
   const files=[...e.target.files].slice(0,20-images.length);
+  if(!files.length) return;
+  const before=beginAction();
   for(const file of files){
     const loaded=await loadFile(file);
     images.push({name:file.name, im:loaded.im, url:loaded.url, s:defaults()});
   }
   rebuildList();
   if(selected<0 && images.length) select(0);
+  finishAction(before);
   draw();
 });
 
 ["canvasW","canvasH"].forEach(id=>$(id).addEventListener("input",()=>{
+  beginContinuousEdit();
   canvas.width=Math.max(100,+$("canvasW").value||1025);
   canvas.height=Math.max(100,+$("canvasH").value||2160);
   draw();
 }));
 
 ["cols","rows","gapX","gapY","marginX","marginY","marginBottom","fit","centerLast"].forEach(id=>{
-  $(id).addEventListener("input",()=>{rebuildDefaultsForGrid();draw()});
+  $(id).addEventListener("input",()=>{beginContinuousEdit();rebuildDefaultsForGrid();draw()});
 });
+
+const borderFields={
+  bgBorderEnabled:"enabled", bgBorderStyle:"style", bgBorderColor:"color", bgBorderColor2:"color2",
+  bgBorderGradient:"gradient", bgBorderGradientAngle:"gradientAngle", bgBorderWidth:"width",
+  bgBorderInset:"inset", bgBorderOpacity:"opacity", bgBorderRadius:"radius", bgBorderGlow:"glow",
+  bgBorderGlowColor:"glowColor", bgBorderGlowBlur:"glowBlur", bgBorderGlowOpacity:"glowOpacity",
+  bgBorderDash:"dash", bgBorderGap:"gap", bgBorderDoubleGap:"doubleGap"
+};
+
+function syncBorderUI(){
+  Object.entries(borderFields).forEach(([id,key])=>{
+    const el=$(id); if(!el) return;
+    if(el.type==="checkbox") el.checked=!!bgBorder[key];
+    else el.value=bgBorder[key];
+  });
+  updateBorderOutputs();
+}
+
+function updateBorderOutputs(){
+  const map={bgBorderWidth:"bgBorderWidthOut",bgBorderInset:"bgBorderInsetOut",bgBorderOpacity:"bgBorderOpacityOut",bgBorderRadius:"bgBorderRadiusOut",bgBorderGlowBlur:"bgBorderGlowBlurOut",bgBorderGlowOpacity:"bgBorderGlowOpacityOut",bgBorderDash:"bgBorderDashOut",bgBorderGap:"bgBorderGapOut",bgBorderDoubleGap:"bgBorderDoubleGapOut"};
+  Object.entries(map).forEach(([id,out])=>{
+    const el=$(id), o=$(out); if(el&&o) o.textContent=el.value+(id.includes("Opacity")?"%":"px");
+  });
+}
+
+Object.entries(borderFields).forEach(([id,key])=>{
+  $(id).addEventListener("input",()=>{
+    beginContinuousEdit();
+    const el=$(id);
+    bgBorder[key]=el.type==="checkbox"?el.checked:(el.type==="number"||el.type==="range"?+el.value:el.value);
+    updateBorderOutputs();
+    draw();
+  });
+});
+
+$("bgBorderStyle").addEventListener("change",()=>{beginContinuousEdit();bgBorder.style=$("bgBorderStyle").value;draw()});
 
 function grid(){
   const cols=Math.max(1,+$("cols").value||3), rows=Math.max(1,+$("rows").value||6);
@@ -139,6 +317,7 @@ const fields={
 Object.entries(fields).forEach(([id,key])=>{
   $(id).addEventListener("input",()=>{
     if(selected<0)return;
+    beginContinuousEdit();
     const el=$(id);
     let v=el.type==="checkbox"?el.checked:
       (el.type==="number"||el.type==="range"?+el.value:el.value);
@@ -171,24 +350,29 @@ function updateOutputs(){
 
 $("deleteSelected").onclick=()=>{
   if(selected<0)return;
+  const before=beginAction();
   URL.revokeObjectURL(images[selected].url);
   images.splice(selected,1);
   selected=Math.min(selected,images.length-1);
   rebuildList();
   select(selected);
+  finishAction(before);
   draw();
 };
 
 $("applyAll").onclick=()=>{
   if(selected<0)return;
+  const before=beginAction();
   const source=JSON.parse(JSON.stringify(images[selected].s));
   images.forEach(o=>o.s={...o.s,...source});
   syncUI();
+  finishAction(before);
   draw();
 };
 
 $("resetBtn").onclick=()=>{
   if(!confirm("Reset the canvas, background and all images?"))return;
+  const before=beginAction();
   images.forEach(o=>URL.revokeObjectURL(o.url));
   images=[];
   bg=null;
@@ -197,6 +381,9 @@ $("resetBtn").onclick=()=>{
   $("imagesInput").value="";
   rebuildList();
   select(-1);
+  bgBorder=borderDefaults();
+  syncBorderUI();
+  finishAction(before);
   draw();
 };
 
@@ -210,6 +397,8 @@ canvas.addEventListener("pointerdown", e=>{
   const hit=hitTest(p.x,p.y);
 
   if(hit>=0){
+    flushPendingHistory();
+    dragHistoryBefore=snapshot();
     select(hit);
     canvas.setPointerCapture?.(e.pointerId);
     drag={
@@ -241,12 +430,15 @@ canvas.addEventListener("pointermove", e=>{
 });
 
 function endPointer(e){
-  if(drag && drag.pointerId===e.pointerId) drag=null;
+  if(drag && drag.pointerId===e.pointerId){
+    drag=null;
+    if(dragHistoryBefore){ pushUndo(dragHistoryBefore); dragHistoryBefore=null; }
+  }
 }
 canvas.addEventListener("pointerup",endPointer);
 canvas.addEventListener("pointercancel",endPointer);
-canvas.addEventListener("pointerleave",e=>{
-  if(drag && drag.pointerId===e.pointerId && e.buttons===0) drag=null;
+canvas.addEventListener("pointerleave",()=>{
+  // Pointer capture keeps an active drag alive even if the finger/mouse leaves the canvas.
 });
 
 /* ---------- Wheel scaling for desktop ---------- */
@@ -255,6 +447,7 @@ canvas.addEventListener("wheel",e=>{
   const p=canvasPoint(e),hit=hitTest(p.x,p.y);
   if(hit>=0){
     e.preventDefault();
+    const before=beginAction();
     select(hit);
     images[hit].s.scale=Math.max(
       1,
@@ -262,6 +455,7 @@ canvas.addEventListener("wheel",e=>{
     );
     images[hit].moved=true;
     syncUI();
+    finishAction(before);
     draw();
   }
 },{passive:false});
@@ -342,6 +536,8 @@ function draw(showSelection=true){
     ctx.fillRect(0,0,canvas.width,canvas.height);
   }
 
+  drawBackgroundBorder();
+
   const g=grid();
   images.forEach((o,i)=>drawImage(o,i,g));
 
@@ -355,6 +551,69 @@ function drawBackground(){
   const scale=Math.max(canvas.width/im.width,canvas.height/im.height);
   const w=im.width*scale,h=im.height*scale;
   ctx.drawImage(im,(canvas.width-w)/2,(canvas.height-h)/2,w,h);
+}
+
+
+function drawBackgroundBorder(){
+  const b=bgBorder;
+  if(!b.enabled || b.width<=0 || b.opacity<=0) return;
+
+  const inset=Math.max(0,Math.min(Math.min(canvas.width,canvas.height)/2-1,b.inset));
+  const w=Math.max(1,canvas.width-2*inset);
+  const h=Math.max(1,canvas.height-2*inset);
+  const strokeW=Math.max(1,b.width);
+  const x=inset+strokeW/2;
+  const y=inset+strokeW/2;
+  const rw=Math.max(1,w-strokeW);
+  const rh=Math.max(1,h-strokeW);
+  const radius=Math.max(0,Math.min(b.radius,Math.min(rw,rh)/2));
+
+  ctx.save();
+  ctx.lineWidth=strokeW;
+  ctx.globalAlpha=b.opacity/100;
+
+  if(b.gradient){
+    const rad=(+b.gradientAngle||0)*Math.PI/180;
+    const cx=canvas.width/2, cy=canvas.height/2;
+    const len=Math.max(canvas.width,canvas.height);
+    const dx=Math.cos(rad)*len/2, dy=Math.sin(rad)*len/2;
+    const grad=ctx.createLinearGradient(cx-dx,cy-dy,cx+dx,cy+dy);
+    grad.addColorStop(0,b.color);
+    grad.addColorStop(1,b.color2);
+    ctx.strokeStyle=grad;
+  }else ctx.strokeStyle=b.color;
+
+  if(b.glow){
+    ctx.shadowColor=withAlpha(b.glowColor,b.glowOpacity/100);
+    ctx.shadowBlur=Math.max(0,b.glowBlur);
+  }
+
+  const stroke=()=>{
+    roundedPath(x,y,rw,rh,radius);
+    ctx.stroke();
+  };
+
+  if(b.style==="dashed"){
+    ctx.setLineDash([Math.max(1,b.dash),Math.max(1,b.gap)]);
+    stroke();
+  }else if(b.style==="dotted"){
+    const d=Math.max(1,b.width*1.5);
+    ctx.setLineDash([d,Math.max(2,b.gap)]);
+    stroke();
+  }else if(b.style==="double"){
+    ctx.setLineDash([]);
+    stroke();
+    const inner=Math.max(1,b.doubleGap);
+    const ix=x+inner, iy=y+inner;
+    const iw=Math.max(1,rw-inner*2), ih=Math.max(1,rh-inner*2);
+    roundedPath(ix,iy,iw,ih,Math.max(0,radius-inner));
+    ctx.stroke();
+  }else{
+    ctx.setLineDash([]);
+    stroke();
+  }
+
+  ctx.restore();
 }
 
 function roundedPath(x,y,w,h,r){
@@ -485,5 +744,16 @@ $("exportBtn").onclick=()=>{
   draw(true);
 };
 
+$("undoBtn").addEventListener("click",undo);
+$("redoBtn").addEventListener("click",redo);
+document.addEventListener("keydown",e=>{
+  const mod=e.ctrlKey||e.metaKey;
+  if(!mod) return;
+  if(e.key.toLowerCase()==="z" && !e.shiftKey){e.preventDefault();undo();}
+  else if(e.key.toLowerCase()==="z" && e.shiftKey || e.key.toLowerCase()==="y"){e.preventDefault();redo();}
+});
+
 rebuildDefaultsForGrid();
+syncBorderUI();
+updateHistoryButtons();
 draw();
